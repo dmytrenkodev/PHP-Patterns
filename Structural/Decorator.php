@@ -7,32 +7,51 @@
 // + Highly flexible, composable.
 // - Too many decorators can make debugging hard.
 
-interface Notifier
+interface TextFormatter
 {
-    public function send(string $msg): void;
+    public function format(string $text): string;
 }
 
-class BasicNotifier implements Notifier
+class PlainTextFormatter implements TextFormatter
 {
-    public function send(string $msg): void
+    public function format(string $text): string
     {
-        // send basic notification
+        return $text;
     }
 }
 
-// Decorator adds logging
-class LoggingNotifier implements Notifier
+abstract class TextFormatterDecorator implements TextFormatter
 {
-    public function __construct(private Notifier $notifier)
-    {
-    }
+    protected TextFormatter $formatter;
 
-    public function send(string $msg): void
+    public function __construct(TextFormatter $formatter)
     {
-        error_log("Sending message: $msg");
-        $this->notifier->send($msg);
+        $this->formatter = $formatter;
     }
 }
 
-$notifier = new LoggingNotifier(new BasicNotifier());
-$notifier->send('Hello!');
+class UppercaseDecorator extends TextFormatterDecorator
+{
+    public function format(string $text): string
+    {
+        $text = $this->formatter->format($text);
+        return strtoupper($text);
+    }
+}
+
+class StarsDecorator extends TextFormatterDecorator
+{
+    public function format(string $text): string
+    {
+        $text = $this->formatter->format($text);
+        return '***' . $text . '***';
+    }
+}
+
+$formatter = new StarsDecorator(
+    new UppercaseDecorator(
+        new PlainTextFormatter()
+    )
+);
+
+echo $formatter->format("hello world");
